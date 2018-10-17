@@ -12,11 +12,21 @@ import {getGlobal, global, stringify} from '../src/util';
   describe('getGlobal', () => {
     const _global: any = new Function('return this')();
     const originalWGSDescriptor = Object.getOwnPropertyDescriptor(_global, 'WorkerGlobalScope');
-    let FunctionSpy: any;
+    const originalFunctionDescriptor = Object.getOwnPropertyDescriptor(_global, 'Function');
+    const OriginalFunction = Function;
+    let FunctionSpy: Function;
 
-    beforeEach(() => { FunctionSpy = spyOn(_global, 'Function').and.callThrough(); });
+    beforeEach(() => {
+      FunctionSpy = jasmine.createSpy('Function').and.callFake(function (...args) {
+        return new OriginalFunction(...args);
+      });
+      _global.Function = FunctionSpy;
+    });
 
     afterEach(() => {
+      delete _global.Function;
+      Object.defineProperty(_global, 'Function', originalFunctionDescriptor!);
+
       delete _global['WorkerGlobalScope'];
       if (originalWGSDescriptor) {
         Object.defineProperty(_global, 'WorkerGlobalScope', originalWGSDescriptor);
